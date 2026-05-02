@@ -77,8 +77,6 @@ https://drizzle1321.github.io/jpy-calculator/
 ## 注意事項
 
 * 匯率僅供估算使用，實際刷卡、換匯或銀行牌告匯率可能不同
-* 使用 iPhone「檔案 App」直接開啟 HTML 時，部分功能可能無法正常執行
-* 建議部署到 GitHub Pages 後，用 Safari 開啟使用
 * 若 API 無法連線，請手動輸入匯率
 
 ## License
