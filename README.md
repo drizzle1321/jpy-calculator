@@ -55,7 +55,7 @@
 如果已經部署到 GitHub Pages，可以用 Safari 開啟網址：
 
 ```text
-https://你的GitHub帳號.github.io/jpy-calculator/
+https://drizzle1321.github.io/jpy-calculator/
 ```
 
 ### 2. 加入 iPhone 主畫面
