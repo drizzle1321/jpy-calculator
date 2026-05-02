@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>日幣匯率計算器</title>
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="日幣計算器">
@@ -91,6 +94,14 @@
       margin-top: 6px;
     }
 
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .refresh-button,
     .theme-toggle {
       width: auto;
       min-width: 54px;
@@ -104,6 +115,19 @@
       padding: 0 13px;
       box-shadow: 0 6px 16px var(--shadow);
       cursor: pointer;
+      margin-top: 0;
+    }
+
+    .refresh-button {
+      min-width: 72px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .result-card {
@@ -330,9 +354,12 @@
       <div class="title-wrap">
         <h1 class="title">日幣計算器</h1>
         <div class="subtitle">輸入日幣金額，自動換算台幣並加上指定金額。</div>
-		<div class="subtitle">Design by KuoChe v3.2.2</div>
+        <div class="subtitle">Design by KuoChe v3.3</div>
       </div>
-      <button id="themeToggle" class="theme-toggle" type="button" aria-label="切換深色模式">🌙</button>
+      <div class="top-actions">
+        <button id="refreshLatest" class="refresh-button" type="button" aria-label="更新到最新版">↻ 更新</button>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="切換深色模式">🌙</button>
+      </div>
     </div>
 
     <div class="result-card">
@@ -417,6 +444,7 @@
     const formulaEl = document.getElementById("formula");
     const quickButtons = document.querySelectorAll(".quick-buttons button");
     const themeToggle = document.getElementById("themeToggle");
+    const refreshLatestButton = document.getElementById("refreshLatest");
 
     function applyTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
@@ -448,6 +476,28 @@
 
       localStorage.setItem("jpy_theme", next);
       applyTheme(next);
+    }
+
+    function buildLatestUrl() {
+      const url = new URL(window.location.href);
+
+      // 重新整理時加上時間戳，避免 GitHub Pages / 手機瀏覽器讀到舊版 index.html 快取。
+      url.searchParams.set("refresh", Date.now().toString());
+
+      return url.toString();
+    }
+
+    function refreshToLatest() {
+      if (refreshLatestButton) {
+        refreshLatestButton.disabled = true;
+        refreshLatestButton.textContent = "更新中";
+      }
+
+      statusEl.textContent = "正在重新抓取 GitHub 最新版...";
+      statusEl.className = "status";
+
+      // location.replace 不會多留一筆瀏覽器歷史紀錄；localStorage 內的金額、匯率設定會保留。
+      window.location.replace(buildLatestUrl());
     }
 
     function formatNumber(value) {
@@ -601,6 +651,7 @@
     }
 
     themeToggle.addEventListener("click", toggleTheme);
+    refreshLatestButton.addEventListener("click", refreshToLatest);
 
     rateInput.addEventListener("input", calculate);
     priceInput.addEventListener("input", calculate);
