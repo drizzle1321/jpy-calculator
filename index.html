@@ -7,9 +7,9 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>日幣匯率計算器</title>
+  <title>匯率計算器</title>
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-title" content="🇯🇵日幣計算器">
+  <meta name="apple-mobile-web-app-title" content="🇯🇵匯率計算器">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
     :root {
@@ -320,6 +320,17 @@
       margin-bottom: 10px;
     }
 
+    .rate-card select {
+      font-size: 16px;
+      padding: 10px 12px;
+      margin-bottom: 0;
+    }
+
+    .rate-card label {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
     .small {
       color: var(--muted);
       font-size: 12px;
@@ -352,9 +363,9 @@
   <div class="container">
     <div class="top-bar">
       <div class="title-wrap">
-        <h1 class="title">日幣計算器</h1>
-        <div class="subtitle">輸入日幣金額，自動換算台幣並加上指定金額。</div>
-        <div class="subtitle">Design by KuoChe v3.3.2</div>
+        <h1 class="title">匯率計算器</h1>
+        <div class="subtitle">輸入金額，自動換算台幣並加上指定金額。</div>
+        <div class="subtitle">Design by KuoChe v3.4.1</div>
       </div>
       <div class="top-actions">
         <button id="refreshLatest" class="refresh-button" type="button" aria-label="更新到最新版">↻</button>
@@ -363,13 +374,13 @@
     </div>
 
     <div class="result-card">
-      <div class="result-label">計算結果，約台幣</div>
+      <div id="resultLabel" class="result-label">計算結果，約台幣</div>
       <div id="result" class="result-value">NT$ 0</div>
-      <div id="resultSub" class="result-sub">輸入日幣金額後會自動計算</div>
+      <div id="resultSub" class="result-sub">輸入金額後會自動計算</div>
     </div>
 
     <div class="card">
-      <label for="price">輸入日幣價格</label>
+      <label for="price">輸入金額</label>
       <input id="price" type="number" inputmode="decimal" placeholder="例如 10000" />
 
       <div class="row">
@@ -406,7 +417,7 @@
       <button type="button" onclick="copyResult()">複製結果</button>
 
       <div id="formula" class="formula">
-        公式：日幣價格 × 匯率 × 1.05 + 加上金額
+        公式：金額 × 匯率 × 1.05 + 加上金額
       </div>
     </div>
 
@@ -414,12 +425,18 @@
       <div class="rate-line">
         <strong id="rateText">目前匯率：正在抓取...</strong>
       </div>
-      <div id="status" class="status">會自動抓取 JPY → TWD 匯率。</div>
+      <div id="status" class="status">會自動抓取匯率。</div>
 
-      <details>
+      <details open>
         <summary>手動修改匯率</summary>
         <div class="manual-rate">
-          <label for="rate">JPY → TWD 匯率</label>
+          <label for="currency">選擇貨幣</label>
+          <select id="currency">
+            <option value="JPY">日幣 (JPY)</option>
+            <option value="KRW">韓幣 (KRW)</option>
+          </select>
+
+          <label for="rate">匯率</label>
           <input id="rate" type="number" inputmode="decimal" step="0.0001" placeholder="例如 0.215" />
           <button type="button" onclick="fetchRate()">重新抓匯率</button>
         </div>
@@ -432,12 +449,14 @@
   </div>
 
   <script>
+    const currencySelect = document.getElementById("currency");
     const rateInput = document.getElementById("rate");
     const priceInput = document.getElementById("price");
     const multiplierInput = document.getElementById("multiplier");
     const extraSelect = document.getElementById("extra");
     const customExtraInput = document.getElementById("customExtra");
     const resultEl = document.getElementById("result");
+    const resultLabelEl = document.getElementById("resultLabel");
     const resultSubEl = document.getElementById("resultSub");
     const statusEl = document.getElementById("status");
     const rateTextEl = document.getElementById("rateText");
@@ -445,6 +464,25 @@
     const quickButtons = document.querySelectorAll(".quick-buttons button");
     const themeToggle = document.getElementById("themeToggle");
     const refreshLatestButton = document.getElementById("refreshLatest");
+
+    const currencyNames = {
+      JPY: "日幣",
+      KRW: "韓幣"
+    };
+
+    const currencyFlags = {
+      JPY: "🇯🇵",
+      KRW: "🇰🇷"
+    };
+
+    const currencySymbols = {
+      JPY: "日圓",
+      KRW: "韓圜"
+    };
+
+    function getCurrency() {
+      return currencySelect.value;
+    }
 
     function applyTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
@@ -480,10 +518,7 @@
 
     function buildLatestUrl() {
       const url = new URL(window.location.href);
-
-      // 重新整理時加上時間戳，避免 GitHub Pages / 手機瀏覽器讀到舊版 index.html 快取。
       url.searchParams.set("refresh", Date.now().toString());
-
       return url.toString();
     }
 
@@ -495,8 +530,6 @@
 
       statusEl.textContent = "正在重新抓取 GitHub 最新版...";
       statusEl.className = "status";
-
-      // location.replace 不會多留一筆瀏覽器歷史紀錄；localStorage 內的金額、匯率設定會保留。
       window.location.replace(buildLatestUrl());
     }
 
@@ -521,9 +554,10 @@
 
     function updateRateText() {
       const rate = parseFloat(rateInput.value) || 0;
+      const currency = getCurrency();
 
       if (rate > 0) {
-        rateTextEl.textContent = `目前匯率：1 日圓 ≈ ${formatRate(rate)} 台幣`;
+        rateTextEl.textContent = `目前匯率：1 ${currencyNames[currency]} ≈ ${formatRate(rate)} 台幣`;
       } else {
         rateTextEl.textContent = "目前匯率：尚未取得";
       }
@@ -534,17 +568,22 @@
       const price = parseFloat(priceInput.value) || 0;
       const multiplier = parseFloat(multiplierInput.value) || 1.05;
       const extra = getExtraAmount();
+      const currency = getCurrency();
 
       const total = price * rate * multiplier + extra;
       const roundedTotal = Math.round(total);
 
       resultEl.textContent = "NT$ " + formatNumber(roundedTotal);
 
+      // 更新結果標籤顯示對應國旗
+      const flag = currencyFlags[currency] || "";
+      resultLabelEl.textContent = `${flag} 計算結果，約台幣`;
+
       if (price > 0 && rate > 0) {
         resultSubEl.textContent =
-          `${formatNumber(price)} 日圓 × ${formatRate(rate)} × ${multiplier} + ${formatNumber(extra)}`;
+          `${formatNumber(price)} ${currencySymbols[currency]} × ${formatRate(rate)} × ${multiplier} + ${formatNumber(extra)}`;
       } else {
-        resultSubEl.textContent = "輸入日幣金額後會自動計算";
+        resultSubEl.textContent = "輸入金額後會自動計算";
       }
 
       formulaEl.textContent =
@@ -557,16 +596,18 @@
       localStorage.setItem("jpy_multiplier", multiplierInput.value);
       localStorage.setItem("jpy_extra", extraSelect.value);
       localStorage.setItem("jpy_custom_extra", customExtraInput.value);
+      localStorage.setItem("jpy_currency", currency);
 
       updateActiveButton();
     }
 
     async function fetchRate() {
+      const currency = getCurrency();
       statusEl.textContent = "正在抓取今日匯率...";
       statusEl.className = "status";
 
       try {
-        const response = await fetch("https://open.er-api.com/v6/latest/JPY");
+        const response = await fetch(`https://open.er-api.com/v6/latest/${currency}`);
 
         if (!response.ok) {
           throw new Error("API 回應失敗");
@@ -591,7 +632,8 @@
 
         calculate();
       } catch (error) {
-        const savedRate = localStorage.getItem("jpy_rate");
+        const storageKey = `jpy_rate_${currency}`;
+        const savedRate = localStorage.getItem(storageKey);
 
         if (savedRate) {
           rateInput.value = savedRate;
@@ -635,11 +677,19 @@
     }
 
     function loadSavedData() {
+      const currency = getCurrency();
+      const storageKey = `jpy_rate_${currency}`;
+
       const savedPrice = localStorage.getItem("jpy_price");
-      const savedRate = localStorage.getItem("jpy_rate");
+      const savedRate = localStorage.getItem(storageKey) || localStorage.getItem("jpy_rate");
       const savedMultiplier = localStorage.getItem("jpy_multiplier");
       const savedExtra = localStorage.getItem("jpy_extra");
       const savedCustomExtra = localStorage.getItem("jpy_custom_extra");
+      const savedCurrency = localStorage.getItem("jpy_currency");
+
+      if (savedCurrency !== null) {
+        currencySelect.value = savedCurrency;
+      }
 
       if (savedPrice !== null) priceInput.value = savedPrice;
       if (savedRate !== null) rateInput.value = savedRate;
@@ -656,6 +706,9 @@
     rateInput.addEventListener("input", calculate);
     priceInput.addEventListener("input", calculate);
     multiplierInput.addEventListener("input", calculate);
+    currencySelect.addEventListener("change", () => {
+      fetchRate();
+    });
 
     extraSelect.addEventListener("change", () => {
       customExtraInput.value = "";
