@@ -371,7 +371,7 @@
       <div class="title-wrap">
         <h1 class="title">匯率計算器</h1>
         <div class="subtitle">輸入金額，自動換算台幣並加上指定金額。</div>
-        <div class="subtitle">Design by KuoChe v3.4.1</div>
+        <div class="subtitle">Design by KuoChe v3.4.2</div>
       </div>
       <div class="top-actions">
         <button id="refreshLatest" class="refresh-button" type="button" aria-label="更新到最新版">↻</button>
@@ -612,7 +612,7 @@
       updateRateText();
 
       localStorage.setItem("jpy_price", priceInput.value);
-      localStorage.setItem("jpy_rate", rateInput.value);
+      localStorage.setItem(`jpy_rate_${currency}`, rateInput.value);
       localStorage.setItem("jpy_multiplier", multiplierInput.value);
       localStorage.setItem("jpy_extra", extraSelect.value);
       localStorage.setItem("jpy_custom_extra", customExtraInput.value);
