@@ -277,6 +277,12 @@
       color: var(--muted);
     }
 
+    .rate-time {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
     .rate-line strong {
       color: var(--text);
       font-size: 15px;
@@ -425,6 +431,7 @@
       <div class="rate-line">
         <strong id="rateText">目前匯率：正在抓取...</strong>
       </div>
+      <div id="rateTime" class="rate-time"></div>
       <div id="status" class="status">會自動抓取匯率。</div>
 
       <details open>
@@ -460,6 +467,7 @@
     const resultSubEl = document.getElementById("resultSub");
     const statusEl = document.getElementById("status");
     const rateTextEl = document.getElementById("rateText");
+    const rateTimeEl = document.getElementById("rateTime");
     const formulaEl = document.getElementById("formula");
     const quickButtons = document.querySelectorAll(".quick-buttons button");
     const themeToggle = document.getElementById("themeToggle");
@@ -542,6 +550,18 @@
     function formatRate(value) {
       if (!value || isNaN(value)) return "尚未取得";
       return Number(value).toFixed(5);
+    }
+
+    function formatRateTime(timestamp) {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      return `更新時間：${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function updateRateTime(timestamp) {
+      if (timestamp) {
+        rateTimeEl.textContent = formatRateTime(timestamp);
+      }
     }
 
     function getExtraAmount() {
@@ -627,6 +647,10 @@
 
         rateInput.value = Number(rate).toFixed(5);
 
+        const now = Date.now();
+        localStorage.setItem(`jpy_rate_time_${currency}`, now);
+        updateRateTime(now);
+
         statusEl.textContent = "已更新今日匯率";
         statusEl.className = "status ok";
 
@@ -686,6 +710,7 @@
       const savedExtra = localStorage.getItem("jpy_extra");
       const savedCustomExtra = localStorage.getItem("jpy_custom_extra");
       const savedCurrency = localStorage.getItem("jpy_currency");
+      const savedRateTime = localStorage.getItem(`jpy_rate_time_${currency}`);
 
       if (savedCurrency !== null) {
         currencySelect.value = savedCurrency;
@@ -696,6 +721,7 @@
       if (savedMultiplier !== null) multiplierInput.value = savedMultiplier;
       if (savedExtra !== null) extraSelect.value = savedExtra;
       if (savedCustomExtra !== null) customExtraInput.value = savedCustomExtra;
+      if (savedRateTime !== null) updateRateTime(parseInt(savedRateTime));
 
       calculate();
     }
