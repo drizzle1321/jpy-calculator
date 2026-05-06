@@ -256,6 +256,28 @@
       border-color: var(--primary);
     }
 
+    .tax-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tax-btn {
+      padding: 12px 8px;
+      font-size: 15px;
+      border-radius: 13px;
+      background: var(--card-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .tax-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
     .formula {
       margin-top: 12px;
       color: var(--muted);
@@ -371,7 +393,7 @@
       <div class="title-wrap">
         <h1 class="title">匯率計算器</h1>
         <div class="subtitle">輸入金額，自動換算台幣並加上指定金額。</div>
-        <div class="subtitle">Design by KuoChe v3.4.2</div>
+        <div class="subtitle">Design by KuoChe v3.5</div>
       </div>
       <div class="top-actions">
         <button id="refreshLatest" class="refresh-button" type="button" aria-label="更新到最新版">↻</button>
@@ -391,8 +413,11 @@
 
       <div class="row">
         <div>
-          <label for="multiplier">固定倍率</label>
-          <input id="multiplier" type="number" inputmode="decimal" step="0.01" value="1.05" />
+          <label>含稅/未稅</label>
+          <div class="tax-buttons">
+            <button type="button" id="taxIncluded" class="tax-btn active">含稅 (5%)</button>
+            <button type="button" id="taxExcluded" class="tax-btn">未稅 (15%)</button>
+          </div>
         </div>
 
         <div>
@@ -407,6 +432,8 @@
           </select>
         </div>
       </div>
+
+      <input id="multiplier" type="hidden" value="1.05" />
 
       <label for="customExtra">自訂加上金額</label>
       <input id="customExtra" type="number" inputmode="decimal" placeholder="沒有需要可留空，例如 200" />
@@ -470,6 +497,8 @@
     const rateTimeEl = document.getElementById("rateTime");
     const formulaEl = document.getElementById("formula");
     const quickButtons = document.querySelectorAll(".quick-buttons button");
+    const taxIncludedBtn = document.getElementById("taxIncluded");
+    const taxExcludedBtn = document.getElementById("taxExcluded");
     const themeToggle = document.getElementById("themeToggle");
     const refreshLatestButton = document.getElementById("refreshLatest");
 
@@ -723,8 +752,33 @@
       if (savedCustomExtra !== null) customExtraInput.value = savedCustomExtra;
       if (savedRateTime !== null) updateRateTime(parseInt(savedRateTime));
 
+      // 設定含稅/未稅按鈕狀態
+      const multiplier = parseFloat(multiplierInput.value);
+      if (multiplier === 1.15) {
+        setTaxExcluded();
+      } else {
+        setTaxIncluded();
+      }
+
       calculate();
     }
+
+    function setTaxIncluded() {
+      multiplierInput.value = "1.05";
+      taxIncludedBtn.classList.add("active");
+      taxExcludedBtn.classList.remove("active");
+      calculate();
+    }
+
+    function setTaxExcluded() {
+      multiplierInput.value = "1.15";
+      taxExcludedBtn.classList.add("active");
+      taxIncludedBtn.classList.remove("active");
+      calculate();
+    }
+
+    taxIncludedBtn.addEventListener("click", setTaxIncluded);
+    taxExcludedBtn.addEventListener("click", setTaxExcluded);
 
     themeToggle.addEventListener("click", toggleTheme);
     refreshLatestButton.addEventListener("click", refreshToLatest);
